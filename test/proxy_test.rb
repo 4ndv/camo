@@ -1,7 +1,6 @@
 require 'rubygems'
 require 'json'
 require 'base64'
-require 'openssl'
 require 'rest_client'
 require 'addressable/uri'
 
@@ -9,8 +8,7 @@ require 'test/unit'
 
 module CamoProxyTests
   def config
-    { 'key'  => ENV['CAMO_KEY']  || "0x24FEEDFACEDEADBEEFCAFE",
-      'host' => ENV['CAMO_HOST'] || "http://localhost:8081" }
+    { 'host' => ENV['CAMO_HOST'] || "http://localhost:8081" }
   end
 
   def spawn_server(path)
@@ -69,14 +67,14 @@ module CamoProxyTests
       assert_equal "deny", response.headers[:x_frame_options]
       assert_equal "default-src 'none'; img-src data:; style-src 'unsafe-inline'", response.headers[:content_security_policy]
       assert_equal "nosniff", response.headers[:x_content_type_options]
-      assert_equal "max-age=31536000; includeSubDomains", response.headers[:strict_transport_security]
+      assert_equal "max-age=31536000", response.headers[:strict_transport_security]
     end
 
     response = request('http://dl.dropbox.com/u/602885/github/soldier-squirrel.jpg')
     assert_equal "deny", response.headers[:x_frame_options]
     assert_equal "default-src 'none'; img-src data:; style-src 'unsafe-inline'", response.headers[:content_security_policy]
     assert_equal "nosniff", response.headers[:x_content_type_options]
-    assert_equal "max-age=31536000; includeSubDomains", response.headers[:strict_transport_security]
+    assert_equal "max-age=31536000", response.headers[:strict_transport_security]
   end
 
   def test_proxy_valid_image_url
@@ -216,10 +214,7 @@ class CamoProxyQueryStringTest < Test::Unit::TestCase
   include CamoProxyTests
 
   def request_uri(image_url)
-    hexdigest = OpenSSL::HMAC.hexdigest(
-      OpenSSL::Digest.new('sha1'), config['key'], image_url)
-
-    uri = Addressable::URI.parse("#{config['host']}/#{hexdigest}")
+    uri = Addressable::URI.parse("#{config['host']}/camo")
     uri.query_values = { 'url' => image_url, 'repo' => '', 'path' => '' }
 
     uri.to_s
@@ -233,15 +228,8 @@ end
 class CamoProxyPathTest < Test::Unit::TestCase
   include CamoProxyTests
 
-  def hexenc(image_url)
-    image_url.to_enum(:each_byte).map { |byte| "%02x" % byte }.join
-  end
-
   def request_uri(image_url)
-    hexdigest = OpenSSL::HMAC.hexdigest(
-      OpenSSL::Digest.new('sha1'), config['key'], image_url)
-    encoded_image_url = hexenc(image_url)
-    "#{config['host']}/#{hexdigest}/#{encoded_image_url}"
+    "#{config['host']}/camo/#{image_url}"
   end
 
   def request(image_url)

@@ -3,12 +3,10 @@ Path        = require 'path'
 Url         = require 'url'
 Http        = require 'http'
 Https       = require 'https'
-Crypto      = require 'crypto'
 QueryString = require 'querystring'
 
 port            = parseInt process.env.PORT        || 8081, 10
 version         = require(Path.resolve(__dirname, "package.json")).version
-shared_key      = process.env.CAMO_KEY             || '0x24FEEDFACEDEADBEEFCAFE'
 max_redirects   = process.env.CAMO_MAX_REDIRECTS   || 4
 camo_hostname   = process.env.CAMO_HOSTNAME        || "unknown"
 socket_timeout  = process.env.CAMO_SOCKET_TIMEOUT  || 10
@@ -41,7 +39,7 @@ default_security_headers =
   "X-XSS-Protection": "1; mode=block"
   "X-Content-Type-Options": "nosniff"
   "Content-Security-Policy": "default-src 'none'; img-src data:; style-src 'unsafe-inline'"
-  "Strict-Transport-Security" : "max-age=31536000; includeSubDomains"
+  "Strict-Transport-Security" : "max-age=31536000"
 
 four_oh_four = (resp, msg, url) ->
   error_log "#{msg}: #{url?.format() or 'unknown'}"
@@ -191,14 +189,6 @@ process_url = (url, transferredHeaders, resp, remaining_redirects) ->
   else
     four_oh_four(resp, "No host found " + url.host, url)
 
-# decode a string of two char hex digits
-hexdec = (str) ->
-  if str and str.length > 0 and str.length % 2 == 0 and not str.match(/[^0-9a-f]/)
-    buf = new Buffer(str.length / 2)
-    for i in [0...str.length] by 2
-      buf[i/2] = parseInt(str[i..i+1], 16)
-    buf.toString()
-
 server = Http.createServer (req, resp) ->
   if req.method != 'GET' || req.url == '/'
     resp.writeHead 200, default_security_headers
@@ -227,10 +217,18 @@ server = Http.createServer (req, resp) ->
 
     delete(req.headers.cookie)
 
-    [query_digest, encoded_url] = url.pathname.replace(/^\//, '').split("/", 2)
-    if encoded_url = hexdec(encoded_url)
+    fullpath = url.pathname.replace(/^\//, '').split("/")
+
+    prefix = fullpath.shift()
+
+    encoded_url = fullpath.join("/")
+
+    if encoded_url
       url_type = 'path'
       dest_url = encoded_url
+
+      if url.query?
+        dest_url += "?#{url.query}"
     else
       url_type = 'query'
       dest_url = QueryString.parse(url.query).url
@@ -240,28 +238,18 @@ server = Http.createServer (req, resp) ->
       url:      req.url
       headers:  req.headers
       dest:     dest_url
-      digest:   query_digest
     })
+
+    if prefix != 'camo'
+      return four_oh_four(resp, "Incorrect prefix")
 
     if req.headers['via'] && req.headers['via'].indexOf(user_agent) != -1
       return four_oh_four(resp, "Requesting from self")
 
     if url.pathname? && dest_url
-      hmac = Crypto.createHmac("sha1", shared_key)
+      url = Url.parse dest_url
 
-      try
-        hmac.update(dest_url, 'utf8')
-      catch error
-        return four_oh_four(resp, "could not create checksum")
-
-      hmac_digest = hmac.digest('hex')
-
-      if hmac_digest == query_digest
-        url = Url.parse dest_url
-
-        process_url url, transferredHeaders, resp, max_redirects
-      else
-        four_oh_four(resp, "checksum mismatch #{hmac_digest}:#{query_digest}")
+      process_url url, transferredHeaders, resp, max_redirects
     else
       four_oh_four(resp, "No pathname provided on the server")
 
