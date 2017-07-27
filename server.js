@@ -60,7 +60,8 @@
     "X-XSS-Protection": "1; mode=block",
     "X-Content-Type-Options": "nosniff",
     "Content-Security-Policy": "default-src 'none'; img-src data:; style-src 'unsafe-inline'",
-    "Strict-Transport-Security": "max-age=31536000"
+    "Strict-Transport-Security": "max-age=31536000",
+    "Access-Control-Allow-Origin": "*"
   };
 
   four_oh_four = function(resp, msg, url) {
@@ -72,7 +73,8 @@
       "X-XSS-Protection": default_security_headers["X-XSS-Protection"],
       "X-Content-Type-Options": default_security_headers["X-Content-Type-Options"],
       "Content-Security-Policy": default_security_headers["Content-Security-Policy"],
-      "Strict-Transport-Security": default_security_headers["Strict-Transport-Security"]
+      "Strict-Transport-Security": default_security_headers["Strict-Transport-Security"],
+      "Access-Control-Allow-Origin": default_security_headers["Access-Control-Allow-Origin"]
     });
     return finish(resp, "Not Found");
   };
@@ -128,7 +130,8 @@
             'X-XSS-Protection': default_security_headers['X-XSS-Protection'],
             'X-Content-Type-Options': default_security_headers['X-Content-Type-Options'],
             'Content-Security-Policy': default_security_headers['Content-Security-Policy'],
-            'Strict-Transport-Security': default_security_headers['Strict-Transport-Security']
+            'Strict-Transport-Security': default_security_headers['Strict-Transport-Security'],
+            'Access-Control-Allow-Origin': default_security_headers['Access-Control-Allow-Origin']
           };
           if (eTag = srcResp.headers['etag']) {
             newHeaders['etag'] = eTag;
@@ -248,7 +251,8 @@
         "X-Frame-Options": default_security_headers["X-Frame-Options"],
         "X-XSS-Protection": default_security_headers["X-XSS-Protection"],
         "X-Content-Type-Options": default_security_headers["X-Content-Type-Options"],
-        "Content-Security-Policy": default_security_headers["Content-Security-Policy"]
+        "Content-Security-Policy": default_security_headers["Content-Security-Policy"],
+        "Access-Control-Allow-Origin": default_security_headers["Access-Control-Allow-Origin"]
       };
       delete req.headers.cookie;
       fullpath = url.pathname.replace(/^\//, '').split("/");

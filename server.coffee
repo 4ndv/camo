@@ -39,7 +39,8 @@ default_security_headers =
   "X-XSS-Protection": "1; mode=block"
   "X-Content-Type-Options": "nosniff"
   "Content-Security-Policy": "default-src 'none'; img-src data:; style-src 'unsafe-inline'"
-  "Strict-Transport-Security" : "max-age=31536000"
+  "Strict-Transport-Security": "max-age=31536000"
+  "Access-Control-Allow-Origin": "*"
 
 four_oh_four = (resp, msg, url) ->
   error_log "#{msg}: #{url?.format() or 'unknown'}"
@@ -51,6 +52,7 @@ four_oh_four = (resp, msg, url) ->
     "X-Content-Type-Options"    : default_security_headers["X-Content-Type-Options"]
     "Content-Security-Policy"   : default_security_headers["Content-Security-Policy"]
     "Strict-Transport-Security" : default_security_headers["Strict-Transport-Security"]
+    "Access-Control-Allow-Origin" : default_security_headers["Access-Control-Allow-Origin"]
 
   finish resp, "Not Found"
 
@@ -97,14 +99,15 @@ process_url = (url, transferredHeaders, resp, remaining_redirects) ->
         four_oh_four(resp, "Content-Length exceeded", url)
       else
         newHeaders =
-          'content-type'              : srcResp.headers['content-type']
-          'cache-control'             : srcResp.headers['cache-control'] || 'public, max-age=31536000'
-          'Camo-Host'                 : camo_hostname
-          'X-Frame-Options'           : default_security_headers['X-Frame-Options']
-          'X-XSS-Protection'          : default_security_headers['X-XSS-Protection']
-          'X-Content-Type-Options'    : default_security_headers['X-Content-Type-Options']
-          'Content-Security-Policy'   : default_security_headers['Content-Security-Policy']
-          'Strict-Transport-Security' : default_security_headers['Strict-Transport-Security']
+          'content-type'                : srcResp.headers['content-type']
+          'cache-control'               : srcResp.headers['cache-control'] || 'public, max-age=31536000'
+          'Camo-Host'                   : camo_hostname
+          'X-Frame-Options'             : default_security_headers['X-Frame-Options']
+          'X-XSS-Protection'            : default_security_headers['X-XSS-Protection']
+          'X-Content-Type-Options'      : default_security_headers['X-Content-Type-Options']
+          'Content-Security-Policy'     : default_security_headers['Content-Security-Policy']
+          'Strict-Transport-Security'   : default_security_headers['Strict-Transport-Security']
+          'Access-Control-Allow-Origin' : default_security_headers['Access-Control-Allow-Origin']
 
         if eTag = srcResp.headers['etag']
           newHeaders['etag'] = eTag
@@ -206,14 +209,15 @@ server = Http.createServer (req, resp) ->
     user_agent = process.env.CAMO_HEADER_VIA or= "Camo Asset Proxy #{version}"
 
     transferredHeaders =
-      'Via'                     : user_agent
-      'User-Agent'              : user_agent
-      'Accept'                  : req.headers.accept ? 'image/*'
-      'Accept-Encoding'         : req.headers['accept-encoding'] ? ''
-      "X-Frame-Options"         : default_security_headers["X-Frame-Options"]
-      "X-XSS-Protection"        : default_security_headers["X-XSS-Protection"]
-      "X-Content-Type-Options"  : default_security_headers["X-Content-Type-Options"]
-      "Content-Security-Policy" : default_security_headers["Content-Security-Policy"]
+      'Via'                         : user_agent
+      'User-Agent'                  : user_agent
+      'Accept'                      : req.headers.accept ? 'image/*'
+      'Accept-Encoding'             : req.headers['accept-encoding'] ? ''
+      "X-Frame-Options"             : default_security_headers["X-Frame-Options"]
+      "X-XSS-Protection"            : default_security_headers["X-XSS-Protection"]
+      "X-Content-Type-Options"      : default_security_headers["X-Content-Type-Options"]
+      "Content-Security-Policy"     : default_security_headers["Content-Security-Policy"]
+      "Access-Control-Allow-Origin" : default_security_headers["Access-Control-Allow-Origin"]
 
     delete(req.headers.cookie)
 

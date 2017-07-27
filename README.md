@@ -11,6 +11,7 @@ Features
 * Follow redirects to a certain depth
 * Restricts proxied images content-types to a whitelist
 * Forward images regardless of HTTP status code
+* Access-Control-Allow-Origin: *
 
 ## URL Formats
 
